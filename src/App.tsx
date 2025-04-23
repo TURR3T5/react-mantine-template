@@ -1,37 +1,37 @@
-import { useEffect, useRef } from 'react';
-import { Container, Title, Text, Button, Center } from '@mantine/core';
-import { gsap } from 'gsap';
+import { useNuiEvent } from './utils/useNuiEvent';
+import { fetchNui } from './utils/fetchNui';
+import { useAppStore } from './store/useAppStore';
+import { Container, Title, Center, Button } from '@mantine/core';
+import { useHotkeys } from '@mantine/hooks';
 
-function App() {
-	const titleRef = useRef<HTMLHeadingElement>(null);
-	const textRef = useRef<HTMLParagraphElement>(null);
-	const buttonRef = useRef<HTMLButtonElement>(null);
+export default function App() {
+	const { isOpen, data, open, close } = useAppStore();
 
-	useEffect(() => {
-		const tl = gsap.timeline();
+	// Lyt til NUI "open" event fra fx Lua
+	useNuiEvent<any>('openApp', (payload) => {
+		open(payload); // fx payload = { msg: "Velkommen" }
+	});
 
-		tl.fromTo(titleRef.current, { opacity: 0, y: -50 }, { opacity: 1, y: 0, duration: 1 }).fromTo(textRef.current, { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 1 }, '-=0.5').fromTo(buttonRef.current, { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 1 }, '-=0.5');
+	useHotkeys([
+		[
+			'Escape',
+			() => {
+				close();
+				fetchNui('closeApp');
+			},
+		],
+	]);
 
-		return () => {
-			tl.kill();
-		};
-	}, []);
+	if (!isOpen) return null; // App er lukket
 
 	return (
-		<Container size='md'>
+		<Container>
 			<Center style={{ height: '100vh', flexDirection: 'column', gap: '1rem' }}>
-				<Title ref={titleRef} order={1}>
-					Welcome to My App
-				</Title>
-				<Text ref={textRef} size='lg' ta='center'>
-					This is a default homepage built with Mantine and animated using GSAP.
-				</Text>
-				<Button ref={buttonRef} size='md'>
-					Get Started
+				<Title order={2}>{data?.msg || 'Hello from NUI'}</Title>
+				<Button color='red' onClick={close}>
+					Luk
 				</Button>
 			</Center>
 		</Container>
 	);
 }
-
-export default App;
